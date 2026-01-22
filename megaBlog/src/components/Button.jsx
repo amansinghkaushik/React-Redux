@@ -8,8 +8,7 @@ function Button({
     hoverBgColor = 'hover:bg-blue-600',
     className = '',
     ...props
-}
-) {
+}) {
   return (
     <button  type={type} className={`${textColor} ${bgColor} ${hoverBgColor} ${className}`} {...props}>
         {children}
