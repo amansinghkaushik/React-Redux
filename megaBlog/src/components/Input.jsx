@@ -25,6 +25,6 @@ const Input = React.forwardRef( function Input({
         {...props }
         />
     </div>
-)}))
+)})
 
 export default Input
