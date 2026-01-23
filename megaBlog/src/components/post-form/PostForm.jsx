@@ -70,7 +70,7 @@ export default function PostForm(post) {
         });
 
         return () => subscription.unsubscribe();
-    }, [watch, slugTransform, setValue]);
+    }, [watch, slugTransform, setValue]); 
 
 
   return (
