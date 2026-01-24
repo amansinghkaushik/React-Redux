@@ -1,66 +1,83 @@
-import React from 'react'
-import { useCallback, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useSelector } from 'react-redux'
-import { useForm } from 'react-hook-form'
-import { Button, Input, RTE, Select } from '../index'
-import appwriteService from '../../appwrite/config'
+import React, { useCallback, useState } from "react";
+import { useForm } from "react-hook-form";
+import { Button, Input, RTE, Select } from "..";
+import appwriteService from "../../appwrite/config";
+import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 
-export default function PostForm(post) {
-
-    const {register, handleSubmit, watch, setValue, getValues, control} = useForm({
+export default function PostForm({ post }) {
+    const { register, handleSubmit, watch, setValue, control, getValues } = useForm({
         defaultValues: {
-            title: post?.title || '',
-            featuredImage: post?.featuredImage || null,
-            content: post?.content || '',
-            status: post?.status || 'draft',
-        }
-    })
+            title: post?.title || "",
+            slug: post?.$id || "",
+            content: post?.content || "",
+            status: post?.status || "active",
+        },
+    });
 
-    const navigate = useNavigate()
-    const { userData } = useSelector(state => state.auth)
+    const navigate = useNavigate();
+    const userData = useSelector((state) => state.auth.userData);
+    const [error, setError] = useState("");
+    const [submitting, setSubmitting] = useState(false);
 
     const submit = async (data) => {
-        if (post){
-            const file = data.image[0]? await appwriteService.uploadFile(data.image[0]) : null;
-        
-            if (file) {
-                appwriteService.deleteFile(post.featuredImage)
-            }
+        try {
+            setError("");
+            setSubmitting(true);
 
-            const dbPost = await appwriteService.updatePost(post.$id, {
-                ...data,
-                featuredImage: file ? file.$id : undefined,
-            });
-        
-            if (dbPost) {
-                navigate(`/post/${dbPost.$id}`)
-            }
-        } else {
-            const file = await appwriteService.uploadFile(data.image[0]);
+            if (post) {
+                const file = data.image?.[0] ? await appwriteService.uploadFile(data.image[0]) : null;
 
-            if (file) {
-                const fileId = file.$id;
-                data.featuredImage = fileId;
-                const dbPost = await appwriteService.createPost({
+                if (file) {
+                    await appwriteService.deleteFile(post.featuredImage);
+                }
+
+                const dbPost = await appwriteService.updatePost(post.$id, {
                     ...data,
-                    userId: userData.$id,
-                })
-            }
+                    featuredImage: file ? file.$id : undefined,
+                });
 
-            if (dbPost) {
-                navigate(`/post/${dbPost.$id}`)
+                if (dbPost) {
+                    navigate(`/post/${dbPost.$id}`);
+                }
+            } else {
+                if (!userData?.$id) {
+                    throw new Error("Please login to create a post");
+                }
+
+                const file = data.image?.[0] ? await appwriteService.uploadFile(data.image[0]) : null;
+
+                if (file) {
+                    const fileId = file.$id;
+                    data.featuredImage = fileId;
+                    const dbPost = await appwriteService.createPost({ 
+                        ...data, 
+                        userId: userData.$id 
+                    });
+
+                    if (dbPost) {
+                        navigate(`/post/${dbPost.$id}`);
+                    }
+                }
             }
+        } catch (err) {
+            console.error("Submit error:", err);
+            setError(err.message || "Failed to submit post. Please try again.");
+        } finally {
+            setSubmitting(false);
         }
-    }
+    };
 
-    const slugTransform = useCallback( (value) => {
-        return value
-        .trim()
-        .toLowerCase()
-        .replace(/^[a-zA-Z\d\s]+/g, '-')
-        .replace(/\s/g, '-')
-    }, [])
+    const slugTransform = useCallback((value) => {
+        if (value && typeof value === "string")
+            return value
+                .trim()
+                .toLowerCase()
+                .replace(/[^a-zA-Z\d\s]+/g, "-")
+                .replace(/\s/g, "-");
+
+        return "";
+    }, []);
 
     React.useEffect(() => {
         const subscription = watch((value, { name }) => {
@@ -70,11 +87,11 @@ export default function PostForm(post) {
         });
 
         return () => subscription.unsubscribe();
-    }, [watch, slugTransform, setValue]); 
+    }, [watch, slugTransform, setValue]);
 
-
-  return (
-    <form onSubmit={handleSubmit(submit)} className="flex flex-wrap">
+    return (
+        <form onSubmit={handleSubmit(submit)} className="flex flex-wrap">
+            {error && <p className="text-red-600 mt-8 text-center w-full">{error}</p>}
             <div className="w-2/3 px-2">
                 <Input
                     label="Title :"
@@ -104,7 +121,7 @@ export default function PostForm(post) {
                 {post && (
                     <div className="w-full mb-4">
                         <img
-                            src={appwriteService.getFilePreview(post.featuredImage)}
+                            src={appwriteService.getFileView(post.featuredImage) || appwriteService.getFilePreview(post.featuredImage)}
                             alt={post.title}
                             className="rounded-lg"
                         />
@@ -116,10 +133,10 @@ export default function PostForm(post) {
                     className="mb-4"
                     {...register("status", { required: true })}
                 />
-                <Button type="submit" bgColor={post ? "bg-green-500" : undefined} className="w-full">
-                    {post ? "Update" : "Submit"}
+                <Button type="submit" bgColor={post ? "bg-green-500" : undefined} className="w-full" disabled={submitting}>
+                    {submitting ? "Submitting..." : post ? "Update" : "Submit"}
                 </Button>
             </div>
         </form>
-  )
+    );
 }

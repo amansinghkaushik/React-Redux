@@ -1,16 +1,23 @@
 import React from 'react'
 
-function Button({
+const Button = ({
     children,
     type = 'button',
+    bgColor = 'bg-blue-600',
     textColor = 'text-white',
-    bgColor = 'bg-blue-500',
-    hoverBgColor = 'hover:bg-blue-600',
     className = '',
+    onClick,
+    disabled = false,
     ...props
-}) {
+}) => {
   return (
-    <button  type={type} className={`${textColor} ${bgColor} ${hoverBgColor} ${className}`} {...props}>
+    <button
+        type={type}
+        onClick={onClick}
+        disabled={disabled}
+        className={`${bgColor} ${textColor} ${className} px-4 py-2 rounded-lg font-medium transition-colors duration-200 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed`}
+        {...props}
+    >
         {children}
     </button>
   )

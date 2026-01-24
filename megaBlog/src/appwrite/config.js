@@ -103,7 +103,11 @@ export class Service{
             return await this.bucket.createFile(
                 conf.appwriteBucketId,
                 ID.unique(),
-                file
+                file,
+                [
+                    // Set read permissions for any user
+                    "read(\"any\")"
+                ]
             )
         } catch (error) {
             console.log("Appwrite serive :: uploadFile :: error", error);
@@ -128,7 +132,14 @@ export class Service{
         return this.bucket.getFilePreview(
             conf.appwriteBucketId,
             fileId
-        )
+        ).toString();
+    }
+
+    getFileView(fileId){
+        return this.bucket.getFileView(
+            conf.appwriteBucketId,
+            fileId
+        ).toString();
     }
 }
 

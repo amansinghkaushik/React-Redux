@@ -1,9 +1,10 @@
 import React from 'react'
+import { useId } from 'react'
 
 function Select({
     options,
     label,
-    chassName = '',
+    className = '',
     ...props
 }, ref) {
     const id = useId()
