@@ -16,6 +16,7 @@ import EditPost from "./Pages/EditPost";
 import Post from "./Pages/Post";
 
 import AllPosts from "./Pages/AllPosts";
+import Membership from './Pages/Membership.jsx'
 
 const router = createBrowserRouter([
   {
@@ -32,6 +33,12 @@ const router = createBrowserRouter([
                 <AuthLayout authentication={false}>
                     <Login />
                 </AuthLayout>
+            ),
+        },
+        {
+            path: "/pricing",
+            element: (
+                <Membership />
             ),
         },
         {

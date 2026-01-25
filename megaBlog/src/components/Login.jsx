@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { login as authLogin } from '../store/authSlice'
@@ -7,12 +7,46 @@ import { useForm } from 'react-hook-form'
 import authService from '../appwrite/auth'
 
 
-function Login() {
-
+function Login({ isOpen, onClose }) {
     const navigate = useNavigate();
     const dispatch = useDispatch();
     const {register, handleSubmit } = useForm();
     const [ error, setError ] = useState("");
+    const modalRef = useRef(null);
+
+    // Close modal when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (modalRef.current && !modalRef.current.contains(event.target)) {
+                onClose();
+            }
+        };
+
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isOpen, onClose]);
+
+    // Close on Escape key
+    useEffect(() => {
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        if (isOpen) {
+            document.addEventListener('keydown', handleEscape);
+        }
+
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [isOpen, onClose]);
 
     const login = async(data) => {
         setError ("")
@@ -21,6 +55,7 @@ function Login() {
             if (session) {
                 const userData = await authService.getCurrentUser();
                 if (userData) dispatch(authLogin({userData}));
+                onClose();
                 navigate("/");
             }
         } catch (error) {
@@ -28,11 +63,28 @@ function Login() {
         }
     }
 
+    if (!isOpen) return null;
+
   return (
-    <div
-    className='flex items-center justify-center w-full'
-    >
-        <div className={`mx-auto w-full max-w-lg bg-gray-100 rounded-xl p-10 border border-black/10`}>
+    <div className='fixed inset-0 z-[100] flex items-center justify-center'>
+        {/* Backdrop overlay */}
+        <div className='absolute inset-0 bg-black/50 backdrop-blur-sm' onClick={onClose}></div>
+        
+        {/* Modal content */}
+        <div 
+            ref={modalRef}
+            className='relative mx-auto w-full max-w-lg bg-white rounded-xl p-10 border border-black/10 shadow-2xl animate-fade-in'
+        >
+            {/* Close button */}
+            <button 
+                onClick={onClose}
+                className='absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors'
+            >
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+            </button>
+
         <div className="mb-2 flex justify-center">
                     <span className="inline-block w-full max-w-[100px]">
                         <Logo width="100%" />
@@ -78,6 +130,22 @@ function Login() {
             </div>
         </form>
         </div>
+
+        <style jsx>{`
+            @keyframes fade-in {
+                from {
+                    opacity: 0;
+                    transform: scale(0.95);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+            }
+            .animate-fade-in {
+                animation: fade-in 0.2s ease-out;
+            }
+        `}</style>
     </div>
   )
 }
